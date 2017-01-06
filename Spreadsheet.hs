@@ -104,8 +104,14 @@ setCell s (r, c) cell =
                        where row =  mkIndex r
                              col = mkIndex c
 
+setEmpty :: Spreadsheet  -> Location -> Spreadsheet
+setEmpty s l = setCell s l Empty
+
 setInt :: Spreadsheet -> Int -> Location -> Spreadsheet
 setInt s v l = setCell s l (Num v)
+
+setText :: Spreadsheet -> String -> Location -> Spreadsheet
+setText s v l = setCell s l (Text v)
 
 setSum :: Spreadsheet -> [Location] -> Location -> Spreadsheet
 setSum s ll l = setCell s l (Add ll Nothing)

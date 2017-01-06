@@ -114,6 +114,15 @@ setSum s l (r,c) =
                          col = mkIndex c
                          cell = Add l Nothing
 
+setMul :: Spreadsheet -> [Location] -> Location -> Spreadsheet
+setMul s l (r,c) = 
+                   take row s ++
+                   [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
+                   drop (row + 1) s
+                   where row =  mkIndex r
+                         col = mkIndex c
+                         cell = Mul l Nothing
+
 mkIndex :: Int -> Int
 mkIndex i = case (i < 1) of
                  True  -> error "Indeksacja od 1!"

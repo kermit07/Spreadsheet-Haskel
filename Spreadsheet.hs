@@ -96,32 +96,25 @@ getCell s (r, c) | 0 < length s &&
                                     where row =  mkIndex r
                                           col = mkIndex c
 
+setCell :: Spreadsheet -> Location -> Cell -> Spreadsheet
+setCell s (r, c) cell =
+                       take row s ++
+                       [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
+                       drop (row + 1) s
+                       where row =  mkIndex r
+                             col = mkIndex c
+
 setInt :: Spreadsheet -> Int -> Location -> Spreadsheet
-setInt s v (r,c) =
-                   take row s ++
-                   [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
-                   drop (row + 1) s
-                   where row =  mkIndex r
-                         col = mkIndex c
-                         cell = Num v
+setInt s v l = setCell s l (Num v)
 
 setSum :: Spreadsheet -> [Location] -> Location -> Spreadsheet
-setSum s l (r,c) =
-                   take row s ++
-                   [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
-                   drop (row + 1) s
-                   where row =  mkIndex r
-                         col = mkIndex c
-                         cell = Add l Nothing
+setSum s ll l = setCell s l (Add ll Nothing)
 
 setMul :: Spreadsheet -> [Location] -> Location -> Spreadsheet
-setMul s l (r,c) = 
-                   take row s ++
-                   [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
-                   drop (row + 1) s
-                   where row =  mkIndex r
-                         col = mkIndex c
-                         cell = Mul l Nothing
+setMul s ll l = setCell s l (Mul ll Nothing)
+
+setAvg :: Spreadsheet -> [Location] -> Location -> Spreadsheet
+setAvg s ll l = setCell s l (Avg ll Nothing)
 
 mkIndex :: Int -> Int
 mkIndex i = case (i < 1) of

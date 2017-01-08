@@ -36,10 +36,7 @@ updateCell s (Num a) = Num a
 updateCell s (Text a) = Text a
 updateCell s (Add l _) = Add l (doSum l s)
 updateCell s (Mul l _) = Mul l (doMul l s)
-updateCell s (Avg l _) = Avg l avg
-    where avg = case doSum l s of
-                     Nothing -> Nothing
-                     Just x -> Just (x / fromIntegral (length l))
+updateCell s (Avg l _) = Avg l (doAvg l s)
 
 updateAll :: Spreadsheet -> Spreadsheet
 updateAll s = map (map (updateCell s)) s
@@ -50,9 +47,9 @@ doSum (l:lx) s = foldl (liftA2 (+)) val [(doSum lx s)]
     where val = case getCell s l of
                      Just Empty -> Just 0.0
                      Just (Num a) -> Just (fromIntegral a)
-                     Just (Add _ a) -> a
-                     Just (Mul _ a) -> a
-                     Just (Avg _ a) -> a
+                     Just (Add l _) -> doSum l s
+                     Just (Mul l _) -> doMul l s
+                     Just (Avg l _) -> doAvg l s
                      otherwise -> Nothing
 
 doMul :: [Location] -> Spreadsheet -> Maybe Float
@@ -61,10 +58,15 @@ doMul (l:lx) s = foldl (liftA2 (*)) val [(doMul lx s)]
     where val = case getCell s l of
                      Just Empty -> Just 1.0
                      Just (Num a) -> Just (fromIntegral a)
-                     Just (Add _ a) -> a
-                     Just (Mul _ a) -> a
-                     Just (Avg _ a) -> a
+                     Just (Add l _) -> doSum l s
+                     Just (Mul l _) -> doMul l s
+                     Just (Avg l _) -> doAvg l s
                      otherwise -> Nothing
+
+doAvg :: [Location] -> Spreadsheet -> Maybe Float
+doAvg l s = case doSum l s of
+                     Nothing -> Nothing
+                     Just x -> Just (x / fromIntegral (length l))
 
 addRow :: Spreadsheet -> Spreadsheet
 addRow s = s ++ [(take len (repeat Empty))]
@@ -98,6 +100,7 @@ getCell s (c, r) | 0 < length s &&
 
 setCell :: Spreadsheet -> Location -> Cell -> Spreadsheet
 setCell s (c, r) cell =
+                       updateAll $ 
                        take row s ++
                        [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
                        drop (row + 1) s
@@ -133,3 +136,8 @@ mkRowIndex :: Int -> Int
 mkRowIndex i = case (i < 1) of
                  True  -> error "Indeksacja od 1!"
                  False -> i-1
+
+-- test wstawiania zagnieżdżonego dodawania:
+--let a1 = updateAll (updateAll ss)
+--let a2 = setSum a1 [('A', 2), ('c', 2)] ('b', 3)
+--let a3 = setInt a2 3 ('a', 1)

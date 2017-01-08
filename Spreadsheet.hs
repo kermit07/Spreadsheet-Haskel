@@ -3,7 +3,7 @@ import Data.Function
 import Data.Maybe
 import Control.Applicative
 
-type Location = (Int, Int)
+type Location = (Char, Int)
 
 data Cell = Empty
           | Num Int
@@ -16,19 +16,19 @@ instance Show Cell where
   show (Empty) = "_"
   show (Num a) = show a
   show (Text a) = a
-  show (Add l (Just x)) = show x
-  show (Add l Nothing) = "SUM ERR"
-  show (Mul l (Just x)) = show x
-  show (Mul l Nothing) = "MUL ERR"
-  show (Avg l (Just x)) = show x
-  show (Avg l Nothing) = "AVG ERR"
+  show (Add _ (Just x)) = show x
+  show (Add _ Nothing) = "SUM ERR"
+  show (Mul _ (Just x)) = show x
+  show (Mul _ Nothing) = "MUL ERR"
+  show (Avg _ (Just x)) = show x
+  show (Avg _ Nothing) = "AVG ERR"
 
 type Spreadsheet = [[Cell]]
 
 ss :: Spreadsheet
 ss = [[Num 2, Text "abc", Num 4],
-      [Mul [(1,1), (1,3)] (Just 99.0), Add [(1,1), (1,3)] (Just 99.0), Add [(1,1), (1,3), (1,3)] (Just 99.0)],
-      [Avg [(1,1), (2,1)] (Just 2.0), Empty, Empty]]
+      [Mul [('A', 1), ('C', 1)] (Just 99.0), Add [('A', 1), ('C', 1)] (Just 99.0), Add [('A', 1), ('C', 1), ('C', 1)] (Just 99.0)],
+      [Avg [('A', 1), ('A', 2)] (Just 2.0), Empty, Empty]]
 
 updateCell :: Spreadsheet -> Cell -> Cell
 updateCell s (Empty) = Empty
@@ -69,7 +69,7 @@ doMul (l:lx) s = foldl (liftA2 (*)) val [(doMul lx s)]
 addRow :: Spreadsheet -> Spreadsheet
 addRow s = s ++ [(take len (repeat Empty))]
     where len = case length s of
-                     0 -> 1
+                     0 -> 0
                      _ -> length (s !! 0)
 
 addCol :: Spreadsheet -> Spreadsheet
@@ -88,21 +88,21 @@ remCol s = case length s of
                           _ -> map (take (length (s !! 0) - 1)) s
 
 getCell :: Spreadsheet -> Location -> Maybe Cell
-getCell s (r, c) | 0 < length s && 
+getCell s (c, r) | 0 < length s && 
                    0 < length (s !! 0) &&
-                   r <= length s &&
-                   c <= length (s !! 0) = Just (s !! row !! col)
+                   row < length s &&
+                   col < length (s !! 0) = Just (s !! row !! col)
                  | otherwise = Nothing
-                                    where row =  mkIndex r
-                                          col = mkIndex c
+                       where col = mkColIndex c
+                             row = mkRowIndex r
 
 setCell :: Spreadsheet -> Location -> Cell -> Spreadsheet
-setCell s (r, c) cell =
+setCell s (c, r) cell =
                        take row s ++
                        [take col (s !! row) ++ [cell] ++ drop (col + 1) (s !! row)] ++
                        drop (row + 1) s
-                       where row =  mkIndex r
-                             col = mkIndex c
+                       where col = mkColIndex c
+                             row = mkRowIndex r
 
 setEmpty :: Spreadsheet  -> Location -> Spreadsheet
 setEmpty s l = setCell s l Empty
@@ -122,7 +122,14 @@ setMul s ll l = setCell s l (Mul ll Nothing)
 setAvg :: Spreadsheet -> [Location] -> Location -> Spreadsheet
 setAvg s ll l = setCell s l (Avg ll Nothing)
 
-mkIndex :: Int -> Int
-mkIndex i = case (i < 1) of
+mkColIndex :: Char -> Int
+mkColIndex c | fromEnum c >= 65 &&
+             fromEnum c <= 90 = fromEnum c - 65
+           | fromEnum c >= 97 &&
+             fromEnum c <= 122 = fromEnum c - 97
+           | otherwise = error "Indeksacja od A do Z!"
+
+mkRowIndex :: Int -> Int
+mkRowIndex i = case (i < 1) of
                  True  -> error "Indeksacja od 1!"
                  False -> i-1

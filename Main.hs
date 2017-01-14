@@ -45,7 +45,9 @@ choices = zip [0.. ] [
    ("Dodaj wiersz", menuAddRow),
    ("Edytuj komórkę", menuEditCell),
    ("Usuń kolumnę", menuRemoveColumn),
-   ("Usuń wiersz", menuRemoveRow)
+   ("Usuń wiersz", menuRemoveRow),
+   ("Zapisz arkusz", menuSaveSpreadsheet),
+   ("Wczytaj arkusz", menuLoadSpreadsheet)
  ]
 
 execute :: Spreadsheet -> Int -> IO Spreadsheet
@@ -105,6 +107,15 @@ showSpreadsheet s = do
       putStrLn (show (head s))
       showSpreadsheet (tail s)
 
+menuSaveSpreadsheet :: Spreadsheet -> IO Spreadsheet
+menuSaveSpreadsheet s = do
+      putStrLn ("---> Zapisano arkusz do pliku")	
+      mainMenu s
+
+menuLoadSpreadsheet :: Spreadsheet -> IO Spreadsheet
+menuLoadSpreadsheet s = do
+      putStrLn ("---> Wczytano arkusz do pliku")	
+      mainMenu s
 -- budowanie:
 -- ghc -o spop --make Main.hs
 -- uruchomienie:

@@ -43,7 +43,7 @@ choices = zip [0.. ] [
    ("Wyświetl arkusz", menuShowSpreadsheet),
    ("Dodaj kolumnę", menuAddColumn),
    ("Dodaj wiersz", menuAddRow),
-   ("Edytuj komórkę", menuEditCell),
+   ("Edytuj komórkę", menuReadLocation),
    ("Usuń kolumnę", menuRemoveColumn),
    ("Usuń wiersz", menuRemoveRow)
  ]
@@ -65,15 +65,35 @@ menuShowSpreadsheet s = do
       putStrLn ""
       mainMenu s
 
--- TODO parser dołączyć
-menuEditCell :: Spreadsheet -> IO Spreadsheet
-menuEditCell s = do
-      putStrLn "Podaj lokalizację edytowanej komówrki:"
+menuReadLocation :: Spreadsheet -> IO Spreadsheet
+menuReadLocation s = do 
+      putStrLn "Podaj lokalizację: "
       loc <- getLine
+      case parse parseLoc loc of
+        [(a, b)] -> do
+                  case a of
+                    (r, c) -> do case getCell s (r,c) of
+                                  Just _ -> do putStrLn $ "Wybrana lokalizacja: " ++ loc
+                                               menuEditCell s (r, c)
+                                  Nothing -> do putStrLn "BŁĄD! (poza zakresem)"
+                                                menuReadLocation s
+        [] -> do putStrLn "BŁĄD! Podaj np. A1 lub D3"
+                 menuReadLocation s
+
+menuEditCell :: Spreadsheet -> Location -> IO Spreadsheet
+menuEditCell s l = do
       putStrLn "Podaj wartość:"
       value <- getLine
-      putStrLn (" ---> Zmieniono komórkę")
-      mainMenu $ setInt s 123 (1,1) -- tutaj w zależności od wyniku parsera wykonywać setInt, setText, setSum, setMul lub setAvg
+      case parse myParser value of
+        [(a, b)] -> do putStrLn " ---> Zmieniono wartość"
+                       case a of
+                         ParserText text -> do mainMenu $ setText s text l
+                         ParserNum num -> do mainMenu $ setInt s num l
+                         ParserSum locs -> do mainMenu $ setSum s locs l
+                         ParserMul locs -> do mainMenu $ setMul s locs l
+                         ParserAvg locs -> do mainMenu $ setAvg s locs l
+        [] -> do putStrLn "Zła wartość!" -- tutaj można wyświetlic podpowiedź jakie wartości są dozwolone
+                 menuEditCell s l
 
 menuAddColumn :: Spreadsheet -> IO Spreadsheet
 menuAddColumn s = do

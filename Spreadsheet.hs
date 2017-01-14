@@ -2,6 +2,7 @@ module Spreadsheet where
 import Data.Function
 import Data.Maybe
 import Control.Applicative
+import System.IO
 
 type Location = (Int, Int)
 
@@ -25,10 +26,13 @@ instance Show Cell where
 
 type Spreadsheet = [[Cell]]
 
-ss :: Spreadsheet
-ss = [[Num 2, Text "abc", Num 4],
+spreadsheet :: Spreadsheet
+spreadsheet = [[Num 2, Text "abc", Num 4],
       [Mul [(1, 1), (3, 1)] (Just 99.0), Add [(1, 1), (3, 1)] (Just 99.0), Add [(1, 1), (3, 1), (3, 1)] (Just 99.0)],
       [Avg [(1, 1), (1, 2)] (Just 2.0), Mul [(1, 3), (1, 3)] (Just 99.0), Empty]]
+
+s1 :: Spreadsheet
+s1 = [[Empty]]
 
 updateCell :: Spreadsheet -> Cell -> Cell
 updateCell s (Empty) = Empty
@@ -147,15 +151,15 @@ setSum s ll l = setCell s l (Add ll Nothing)
 
 setMul :: Spreadsheet -> [Location] -> Location -> Spreadsheet
 setMul s ll l = setCell s l (Mul ll Nothing)
-
+  
 setAvg :: Spreadsheet -> [Location] -> Location -> Spreadsheet
 setAvg s ll l = setCell s l (Avg ll Nothing)
 
 charToIntIndex :: Char -> Int
 charToIntIndex c | fromEnum c >= 65 &&
-                   fromEnum c <= 90 = fromEnum c - 65
+                   fromEnum c <= 90 = fromEnum c - 64
                  | fromEnum c >= 97 &&
-                   fromEnum c <= 122 = fromEnum c - 97
+                   fromEnum c <= 122 = fromEnum c - 96
                  | otherwise = error "Indeksacja od A do Z!"
 
 mkIndex :: Int -> Int
@@ -163,7 +167,9 @@ mkIndex i = case (i < 1) of
                  True  -> error "Indeksacja od 1!"
                  False -> i-1
 
--- test wstawiania zagnieżdżonego dodawania:
---let a1 = updateAll (updateAll ss)
---let a2 = setSum a1 [('A', 2), ('c', 2)] ('b', 3)
---let a3 = setInt a2 3 ('a', 1)
+-- tests example on console
+-- let a1 = updateAll (updateAll ss)
+-- let a2 = setSum a1 [('A', 2), ('c', 2)] ('b', 3)
+-- let a3 = setInt a2 3 ('a', 1)
+-- a3 (prints a3)
+------------------

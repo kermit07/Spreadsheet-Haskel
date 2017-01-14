@@ -1,16 +1,21 @@
 module Main where
 import Spreadsheet
+import Parser
 import System.Environment
 import Control.Monad
 import System.Exit (exitSuccess)
 
+-- kompilacja: :l Main.hs
+-- uruchomienie komendą: main
 
+-- główna funcja programu
 main :: IO ()
 main = do
   putStrLn "-----------START PROGRAMU-----------"
   mainMenu s1
   putStrLn "-----------KONIEC PROGRAMU-----------"
 
+-- wyświetlenie menu i walidacja wybranej opcji
 mainMenu :: Spreadsheet -> IO (Spreadsheet)
 mainMenu ss = do
       putStr "Naciśnij ENTER aby kontynuować..."
@@ -60,6 +65,7 @@ menuShowSpreadsheet s = do
       putStrLn ""
       mainMenu s
 
+-- TODO parser dołączyć
 menuEditCell :: Spreadsheet -> IO Spreadsheet
 menuEditCell s = do
       putStrLn "Podaj lokalizację edytowanej komówrki:"
@@ -67,7 +73,7 @@ menuEditCell s = do
       putStrLn "Podaj wartość:"
       value <- getLine
       putStrLn (" ---> Zmieniono komórkę")
-      mainMenu $ setInt s 123 (1,1)
+      mainMenu $ setInt s 123 (1,1) -- tutaj w zależności od wyniku parsera wykonywać setInt, setText, setSum, setMul lub setAvg
 
 menuAddColumn :: Spreadsheet -> IO Spreadsheet
 menuAddColumn s = do
@@ -100,6 +106,6 @@ showSpreadsheet s = do
       showSpreadsheet (tail s)
 
 -- budowanie:
--- ghc -o calc --make calc.hs
+-- ghc -o spop --make Main.hs
 -- uruchomienie:
--- calc.exe
+-- spop.exe

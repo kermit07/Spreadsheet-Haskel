@@ -1,7 +1,12 @@
+{-# LANGUAGE DeriveGeneric #-}
 module Spreadsheet where
 import Data.Function
 import Data.Maybe
 import Control.Applicative
+import Data.Binary
+import GHC.Generics (Generic)
+import System.IO
+
 
 -- lokalizacja jest definiowana za pomocą dwóch współrzędnych
 type Location = (Int, Int)
@@ -13,6 +18,9 @@ data Cell = Empty
           | Add [Location] (Maybe Float) -- [Location] określa lokalizacje sumowanych komórek a (Maybe Float) przechowuje wynik
           | Mul [Location] (Maybe Float) -- jw
           | Avg [Location] (Maybe Float) -- jw
+           deriving (Generic)
+
+instance Binary Cell
 
 instance Show Cell where
   show (Empty) = "_"
@@ -26,7 +34,7 @@ instance Show Cell where
   show (Avg _ Nothing) = "AVG ERR"
 
 -- arkusz jest dwuwymiarową tablicą komórek
-type Spreadsheet = [[Cell]]
+type Spreadsheet = [[Cell]] 
 
 -- przykładowy arkusz
 spreadsheet :: Spreadsheet

@@ -18,7 +18,7 @@ instance Monad Parser where
 
 -- podstawowe parsery
 
-item  :: Parser Char
+item :: Parser Char
 item =  P (\inp -> case inp of
                      []     -> []
                      (x:xs) -> [(x,xs)])
@@ -49,11 +49,11 @@ letter = sat isLetter
 char :: Char -> Parser Char
 char x = sat (== x)
 
-char2 :: String -> Parser Char
-char2 [] = failure
-char2 (x:xs) = sat (== x)
-              +++
-               char2 xs
+string :: String -> Parser String
+string []     = return []
+string (x:xs) = do char x
+                   string xs
+                   return (x:xs)
 
 many :: Parser a -> Parser [a]
 many p = many1 p +++ return []
@@ -63,73 +63,71 @@ many1 p = do v <- p
              vs <- many p
              return (v:vs)
 
-type Loc = (Int, Int)
+space :: Parser ()
+space = do many (sat isSpace)
+           return ()
 
--- w Parser.hs niestety nie można zaimportować Spreadsheet.hs, bo cykle importów nie są dozwolone
--- dlatego trzeba stworzyć jakąś kolejną strukturę i sprytnie w Main.hs ją przerabiać na typ Cell
-data MyResult = ParserNum Int
-              | ParserText String
-              | ParserSum [Loc]
-              | ParserMul [Loc]
-              | ParserAvg [Loc]
+testString :: String -> Parser String
+testString str = token (string str)
 
-instance Show MyResult where
-  show (ParserNum a) = "NUM " ++ show a
-  show (ParserText a) = "TEXT " ++ a
-  show (ParserSum x) = "SUM " ++ show x
-  show (ParserMul x) = "MUL " ++ show x
-  show (ParserAvg x) = "AVG " ++ show x
+type ParserLoc = (Int, Int)
 
-parseInt :: Parser MyResult
-parseInt = do d <- many1 digit
-              return $ ParserNum (read d :: Int)
+data ParserResult = ParserNum Int
+                  | ParserText String
+                  | ParserSum [ParserLoc]
+                  | ParserMul [ParserLoc]
+                  | ParserAvg [ParserLoc]
 
-parseText :: Parser MyResult
+token :: Parser a -> Parser a
+token p = do space
+             v <- p
+             space
+             return v
+
+parseNat :: Parser Int
+parseNat = do xs <- many1 digit
+              return (read xs)
+
+parseInt :: Parser Int
+parseInt = do char '-'
+              n <- parseNat
+              return (-n)
+             +++
+              parseNat
+
+parseText :: Parser String
 parseText = do d <- many1 item
-               return $ ParserText d
+               return d
 
-parseLoc :: Parser Loc
+parseLoc :: Parser ParserLoc
 parseLoc = do c <- letter
               d <- many1 digit
               return $ ((charToIntIndex c), (read d :: Int))
 
-parseLoc2 :: Parser Loc
-parseLoc2 = do char ' '
-               c <- letter
-               d <- many1 digit
-               return $ ((charToIntIndex c), (read d :: Int))
+parseOperation :: Parser ParserResult
+parseOperation = do testString "sum"
+                    e <- many1 $ token parseLoc
+                    return $ ParserSum e
+                   +++ do
+                    testString "mul"
+                    e <- many1 $ token parseLoc
+                    return $ ParserMul e
+                   +++ do
+                    testString "avg"
+                    e <- many1 $ token parseLoc
+                    return $ ParserAvg e
 
-parseSum :: Parser MyResult
-parseSum = do char2 "sS"
-              char2 "uU"
-              char2 "mM"
-              e <- many1 parseLoc2
-              return $ ParserSum e
-
-parseMul :: Parser MyResult
-parseMul = do char2 "mM"
-              char2 "uU"
-              char2 "lL"
-              e <- many1 parseLoc2
-              return $ ParserMul e
-
-parseAvg :: Parser MyResult
-parseAvg = do char2 "aA"
-              char2 "vV"
-              char2 "gG"
-              e <- many1 parseLoc2
-              return $ ParserAvg e
-
-myParser :: Parser MyResult -- tutaj zacząłem robić swój parser. Dla testów na razie
-myParser = do parseSum
-             +++
-              parseMul
-             +++
-              parseAvg
-             +++
-              parseInt
-             +++
-              parseText
+myParser :: Parser ParserResult
+myParser = do space
+              result <- testString "="
+              parseOperation
+             +++ do
+              space
+              result <- parseInt
+              return $ ParserNum result
+             +++ do
+              result <- parseText
+              return $ ParserText result
 
 charToIntIndex :: Char -> Int
 charToIntIndex c | fromEnum c >= 65 &&

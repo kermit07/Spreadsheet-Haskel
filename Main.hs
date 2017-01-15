@@ -1,8 +1,8 @@
 module Main where
 import Spreadsheet
 import Parser
-import System.Environment
-import Control.Monad
+import Data.Binary
+import qualified Data.ByteString.Lazy
 import System.Exit (exitSuccess)
 
 -- kompilacja: :l Main.hs
@@ -45,7 +45,9 @@ choices = zip [0.. ] [
    ("Dodaj wiersz", menuAddRow),
    ("Edytuj komórkę", menuReadLocation),
    ("Usuń kolumnę", menuRemoveColumn),
-   ("Usuń wiersz", menuRemoveRow)
+   ("Usuń wiersz", menuRemoveRow),
+   ("Zapisz do pliku", menuSaveToFile),
+   ("Wczytaj z pliku", menuReadFromFile)
  ]
 
 execute :: Spreadsheet -> Int -> IO Spreadsheet
@@ -114,6 +116,23 @@ menuRemoveRow :: Spreadsheet -> IO Spreadsheet
 menuRemoveRow s = do
       putStrLn (" ---> Usunięto wiersz")
       mainMenu $ remRow s
+
+menuSaveToFile :: Spreadsheet -> IO Spreadsheet
+menuSaveToFile s = do
+      putStrLn "Podaj nazwę pliku do zapisu: "
+      fileName <- getLine
+      Data.ByteString.Lazy.writeFile fileName (encode s)
+      putStrLn "Zapisano!"
+      mainMenu s
+
+menuReadFromFile :: Spreadsheet -> IO Spreadsheet
+menuReadFromFile s = do
+      putStrLn "Podaj nazwę pliku do odczytu: "
+      fileName <- getLine
+      fileContent <- Data.ByteString.Lazy.readFile fileName
+      let newS = (decode fileContent)
+      putStrLn "Przeczytano!"
+      mainMenu newS
 
 menuQuit :: Spreadsheet -> IO Spreadsheet
 menuQuit s = do

@@ -56,7 +56,7 @@ execute ss n = doExec $ filter (\(i, _) -> i == n) choices
 
 noOption :: Spreadsheet -> IO Spreadsheet
 noOption s = do
-      putStrLn ("Nie ma takiej opcji")
+      putStrLn "Nie ma takiej opcji"
       mainMenu s
 
 menuShowSpreadsheet :: Spreadsheet -> IO Spreadsheet
@@ -99,22 +99,22 @@ menuEditCell s l = do
 
 menuAddColumn :: Spreadsheet -> IO Spreadsheet
 menuAddColumn s = do
-      putStrLn (" ---> Dodano kolumnę")
+      putStrLn " ---> Dodano kolumnę"
       mainMenu $ addCol s
 
 menuAddRow :: Spreadsheet -> IO Spreadsheet
 menuAddRow s = do
-      putStrLn (" ---> Dodano wiersz")
+      putStrLn " ---> Dodano wiersz"
       mainMenu $ addRow s
 
 menuRemoveColumn :: Spreadsheet -> IO Spreadsheet
 menuRemoveColumn s = do
-      putStrLn (" ---> Usunięto kolumnę")
+      putStrLn " ---> Usunięto kolumnę"
       mainMenu $ remCol s
 
 menuRemoveRow :: Spreadsheet -> IO Spreadsheet
 menuRemoveRow s = do
-      putStrLn (" ---> Usunięto wiersz")
+      putStrLn " ---> Usunięto wiersz"
       mainMenu $ remRow s
 
 menuSaveToFile :: Spreadsheet -> IO Spreadsheet

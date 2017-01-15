@@ -6,7 +6,7 @@ import Control.Applicative
 import Data.Binary
 import GHC.Generics (Generic)
 import System.IO
-
+import qualified Data.ByteString.Lazy as DBSL
 
 -- lokalizacja jest definiowana za pomocą dwóch współrzędnych
 type Location = (Int, Int)
@@ -19,8 +19,6 @@ data Cell = Empty
           | Mul [Location] (Maybe Float) -- jw
           | Avg [Location] (Maybe Float) -- jw
            deriving (Generic)
-
-instance Binary Cell
 
 instance Show Cell where
   show (Empty) = "_"
@@ -35,6 +33,40 @@ instance Show Cell where
 
 -- arkusz jest dwuwymiarową tablicą komórek
 type Spreadsheet = [[Cell]] 
+
+--metoda serializująca obiekt do podanego w nazwie pliku
+saveSpreadsheet :: Spreadsheet -> [Char] -> IO ()
+saveSpreadsheet s filename = DBSL.writeFile filename (encode s)
+                                 
+serPutList :: [Int] -> Put 
+serPutList [] = []
+serPutList (x:xs) = do 
+		  put x: serPutList xs
+ 
+instance Binary Cell where
+    put (Text a) = do put ('t' :: Char)
+                           put a
+
+    put (Num a)  = do put ('n' :: Char)
+                           put a
+
+    put (Add b s) = do put ('a' :: Char)
+                           put s
+			   serPutList ((>>= \(a,b) -> [Left a,Right b]) b)
+
+    put (Mul b s) = do put ('m' :: Char)
+                           put s
+			   serPutList ((>>= \(a,b) -> [Left a,Right b]) b)
+
+    put (Avg b s) = do put ('v' :: Char)
+                           put s
+			   serPutList ((>>= \(a,b) -> [Left a,Right b]) b)
+
+--TODO: gettery   
+
+--TODO: instancja dla spreadsheet
+-- instance Binary Spreadsheet where
+
 
 -- przykładowy arkusz
 spreadsheet :: Spreadsheet

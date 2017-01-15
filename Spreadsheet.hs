@@ -2,6 +2,7 @@ module Spreadsheet where
 import Data.Function
 import Data.Maybe
 import Control.Applicative
+import Data.Binary
 
 -- lokalizacja jest definiowana za pomocą dwóch współrzędnych
 type Location = (Int, Int)
@@ -24,6 +25,71 @@ instance Show Cell where
   show (Mul _ Nothing) = "MUL ERR"
   show (Avg _ (Just x)) = show x
   show (Avg _ Nothing) = "AVG ERR"
+
+instance Binary Cell where
+    put (Empty) =                    do put (0 :: Word8)
+    put (Num val) =                  do put (1 :: Word8)
+                                        put val
+    put (Text val) =                 do put (2 :: Word8)
+                                        put val
+    put (Add ((r,c):l) (Just val)) = do put (3 :: Word8)
+                                        put ((r,c):l)
+                                        put val
+    put (Add ((r,c):l) Nothing) =    do put (4 :: Word8)
+                                        put ((r,c):l)
+    put (Add [] (Just x)) =          do put (5 :: Word8)
+                                        put x
+    put (Add [] Nothing) =           do put (6 :: Word8)
+
+    put (Mul ((r,c):l) (Just val)) = do put (7 :: Word8)
+                                        put ((r,c):l)
+                                        put val
+    put (Mul ((r,c):l) Nothing) =    do put (8 :: Word8)
+                                        put ((r,c):l)
+    put (Mul [] (Just val)) =        do put (9 :: Word8)
+                                        put val
+    put (Mul [] Nothing) =           do put (10 :: Word8)
+
+    put (Avg ((r,c):l) (Just val)) = do put (11 :: Word8)
+                                        put ((r,c):l)
+                                        put val
+    put (Avg ((r,c):l) Nothing) =    do put (12 :: Word8)
+                                        put ((r,c):l)
+    put (Avg [] (Just val)) =        do put (13 :: Word8)
+                                        put val
+    put (Avg [] Nothing) =           do put (14 :: Word8)
+
+    get = do t <- get :: Get Word8
+             case t of
+                    0  -> do return (Empty)
+                    1  -> do val <- get
+                             return (Num val)
+                    2  -> do val <- get
+                             return (Text val)
+                    3  -> do ((r,c):l) <- get
+                             val <- get
+                             return (Add ((r,c):l) (Just val))
+                    4  -> do ((r,c):l) <- get
+                             return (Add ((r,c):l) Nothing)
+                    5  -> do val <- get
+                             return (Add [] (Just val))
+                    6  -> do return (Add [] Nothing)
+                    7  -> do ((r,c):l) <- get
+                             val <- get
+                             return (Mul ((r,c):l) (Just val))
+                    8  -> do ((r,c):l) <- get
+                             return (Mul ((r,c):l) Nothing)
+                    9  -> do val <- get
+                             return (Mul [] (Just val))
+                    10 -> do return (Mul [] Nothing)
+                    11 -> do ((r,c):l) <- get
+                             val <- get
+                             return (Avg ((r,c):l) (Just val))
+                    12 -> do ((r,c):l) <- get
+                             return (Avg ((r,c):l) Nothing)
+                    13 -> do val <- get
+                             return (Avg [] (Just val))
+                    14 -> do return (Avg [] Nothing)
 
 -- arkusz jest dwuwymiarową tablicą komórek
 type Spreadsheet = [[Cell]]

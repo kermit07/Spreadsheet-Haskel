@@ -18,13 +18,13 @@ data Cell = Empty
 instance Show Cell where
   show (Empty) = "_"
   show (Num a) = show a
-  show (Text a) = a
+  show (Text a) = "\"" ++ a ++ "\""
   show (Add _ (Just x)) = show x
-  show (Add _ Nothing) = "SUM ERR"
+  show (Add _ Nothing) = "sum_err"
   show (Mul _ (Just x)) = show x
-  show (Mul _ Nothing) = "MUL ERR"
+  show (Mul _ Nothing) = "mul_err"
   show (Avg _ (Just x)) = show x
-  show (Avg _ Nothing) = "AVG ERR"
+  show (Avg _ Nothing) = "avg_err"
 
 instance Binary Cell where
     put (Empty) =                    do put (0 :: Word8)
@@ -160,7 +160,7 @@ addCol s = map (++ [Empty]) s
 remRow :: Spreadsheet -> Spreadsheet
 remRow s = case length s of
                 0 -> s
-                _ -> take rowIndex $ updateAll $ validateRow s rowIndex
+                _ -> updateAll $ take rowIndex $ validateRow s (rowIndex + 1)
                      where rowIndex = length s - 1
 
 -- założyłem, że usunięcie kolumny usuwa po prostu ostatnią kolumnę
@@ -170,34 +170,40 @@ remCol s = case length s of
                 0 -> s
                 _ -> case length (s !! 0) of
                           0 -> s
-                          _ -> map (take colIndex) $ updateAll $ validateCol s colIndex
+                          _ -> updateAll $ map (take colIndex) $ validateCol s (colIndex + 1)
                                where colIndex = length (s !! 0) - 1
 
 -- wywoływane przy usuwaniu kolumny. Podawany jest numer kolumny
 -- dla każdej komórki uruchamia validateCell z numerem kolumny
 validateCol :: Spreadsheet -> Int -> Spreadsheet
-validateCol s cx = map (map (validateCell s cx (-1))) s
+validateCol s cx = map (map (validateCell s (cx, (-1)))) s
 
 -- wywoływane przy usuwaniu wiersza. Podawany jest numer wiersza
 -- dla każdej komórki uruchamia validateCell z numerem wiersza
 validateRow :: Spreadsheet -> Int -> Spreadsheet
-validateRow s rx = map (map (validateCell s (-1) rx)) s
+validateRow s rx = map (map (validateCell s ((-1), rx))) s
 
 -- gdy otrzyma komórkę z operacją dodawania, mnożenia lub średniej to aktualizuje lokalizacje poprzez usunięcie tych, które zawierają podane współrzędne 
-validateCell :: Spreadsheet -> Int -> Int -> Cell -> Cell
-validateCell s cx rx (Add l _) = Add newL (doSum newL s)
-                where newL = remLocations l cx rx
-validateCell s cx rx (Mul l _) = Mul newL (doMul newL s)
-                where newL = remLocations l cx rx
-validateCell s cx rx (Avg l _) = Avg newL (doAvg newL s)
-                where newL = remLocations l cx rx
-validateCell _ _ _ cell = cell
+validateCell :: Spreadsheet -> Location -> Cell -> Cell
+validateCell s l (Add ll _) = Add newL (doSum newL s)
+                where newL = remLocations ll l
+validateCell s l (Mul ll _) = Mul newL (doMul newL s)
+                where newL = remLocations ll l
+validateCell s l (Avg ll _) = Avg newL (doAvg newL s)
+                where newL = remLocations ll l
+validateCell _ _ cell = cell
 
 -- usuwa elementu z tablicy, które zawierają podane współrzędne (alternatywa)
-remLocations :: [Location] -> Int -> Int -> [Location]
-remLocations [] _ _ = []
-remLocations ((c, r):ls) cx rx | (mkIndex c == cx || mkIndex r == rx) = remLocations ls cx rx
-                               | otherwise = (c, r) : remLocations ls cx rx
+remLocations :: [Location] -> Location -> [Location]
+remLocations [] _ = []
+remLocations ((c, r):ls) (cx, rx) | (c == cx || r == rx) = remLocations ls (cx, rx)
+                                  | otherwise = (c, r) : remLocations ls (cx, rx)
+
+-- usuwa elementu z tablicy, które zawierają podane współrzędne (koniungcja)
+remLocations2 :: [Location] -> Location -> [Location]
+remLocations2 [] _ = []
+remLocations2 ((c, r):ls) (cx, rx) | (c == cx && r == rx) = remLocations2 ls (cx, rx)
+                                   | otherwise = (c, r) : remLocations2 ls (cx, rx)
 
 -- pobiera komórkę z podanych współrzędnych lub zwraca Nothing, gdy złe współrzędne
 getCell :: Spreadsheet -> Location -> Maybe Cell
@@ -228,13 +234,16 @@ setText :: Spreadsheet -> String -> Location -> Spreadsheet
 setText s v l = setCell s l (Text v)
 
 setSum :: Spreadsheet -> [Location] -> Location -> Spreadsheet
-setSum s ll l = setCell s l (Add ll Nothing)
+setSum s ll (cx, rx) = setCell s (cx, rx) (Add newL Nothing)
+                       where newL = remLocations2 ll (cx, rx) -- usunięcie lokalizacji wskazującej na samego siebie
 
 setMul :: Spreadsheet -> [Location] -> Location -> Spreadsheet
-setMul s ll l = setCell s l (Mul ll Nothing)
+setMul s ll (cx, rx) = setCell s (cx, rx) (Mul newL Nothing)
+                       where newL = remLocations2 ll (cx, rx) -- usunięcie lokalizacji wskazującej na samego siebie
   
 setAvg :: Spreadsheet -> [Location] -> Location -> Spreadsheet
-setAvg s ll l = setCell s l (Avg ll Nothing)
+setAvg s ll (cx, rx) = setCell s (cx, rx) (Avg newL Nothing)
+                       where newL = remLocations2 ll (cx, rx) -- usunięcie lokalizacji wskazującej na samego siebie
 
 -- funkcja, która zamienia chara na inta na zasadzie
 -- a->1, b->2, A->1, C->3 itp

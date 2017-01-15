@@ -2,6 +2,7 @@ module Main where
 import Spreadsheet
 import Parser
 import Data.Binary
+import System.IO
 import qualified Data.ByteString.Lazy
 import System.Exit (exitSuccess)
 
@@ -19,8 +20,10 @@ main = do
 mainMenu :: Spreadsheet -> IO (Spreadsheet)
 mainMenu ss = do
       putStr "Naciśnij ENTER aby kontynuować..."
+      hFlush stdout
       getLine
       putStrLn . unlines $ map concatNums choices
+      hFlush stdout
       choice <- getLine
       case validate choice of
          Just n  -> execute ss . read $ choice
@@ -70,6 +73,7 @@ menuShowSpreadsheet s = do
 menuReadLocation :: Spreadsheet -> IO Spreadsheet
 menuReadLocation s = do 
       putStrLn "Podaj lokalizację: "
+      hFlush stdout
       loc <- getLine
       case parse parseLoc loc of
         [(a, b)] -> do
@@ -85,6 +89,7 @@ menuReadLocation s = do
 menuEditCell :: Spreadsheet -> Location -> IO Spreadsheet
 menuEditCell s l = do
       putStrLn "Podaj wartość:"
+      hFlush stdout
       value <- getLine
       case parse myParser value of
         [(a, b)] -> do putStrLn " ---> Zmieniono wartość"
@@ -120,6 +125,7 @@ menuRemoveRow s = do
 menuSaveToFile :: Spreadsheet -> IO Spreadsheet
 menuSaveToFile s = do
       putStrLn "Podaj nazwę pliku do zapisu: "
+      hFlush stdout
       fileName <- getLine
       Data.ByteString.Lazy.writeFile fileName (encode s)
       putStrLn "Zapisano!"
@@ -128,6 +134,7 @@ menuSaveToFile s = do
 menuReadFromFile :: Spreadsheet -> IO Spreadsheet
 menuReadFromFile s = do
       putStrLn "Podaj nazwę pliku do odczytu: "
+      hFlush stdout
       fileName <- getLine
       fileContent <- Data.ByteString.Lazy.readFile fileName
       let newS = (decode fileContent)
